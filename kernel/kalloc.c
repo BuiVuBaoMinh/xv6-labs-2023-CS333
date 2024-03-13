@@ -80,3 +80,21 @@ kalloc(void)
     memset((char*)r, 5, PGSIZE); // fill with junk
   return (void*)r;
 }
+
+/*
+Get number of free memory bytes
+*/
+uint64 
+get_free_mem(void){
+  struct run *r; // run struct is just a linked list?
+  uint64 freemem=0;
+  acquire(&kmem.lock);
+  r = kmem.freelist; // Get the free proc list as run
+  while(r){
+    freemem += PGSIZE; // each process is allocated 4096-byte (:80) ?
+    r = r->next;
+  }
+
+  release(&kmem.lock);
+  return freemem;
+}
