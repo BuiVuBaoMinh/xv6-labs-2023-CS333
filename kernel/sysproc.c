@@ -117,10 +117,10 @@ sys_sysinfo(uint64 va)
   kinfo.freemem = get_free_mem();
   kinfo.nproc = get_n_active_proc();
   //debug
-  printf("sys_sysinfo debug triggered: \n");
-  printf("  sys_sysinfo freemem: %d Bytes\n", kinfo.freemem);
-  printf("  sys_sysinfo num procs: %d procs\n", kinfo.nproc);
-  printf("Passing back to userspace\n");
+  // printf("sys_sysinfo debug triggered: \n");
+  // printf("  sys_sysinfo freemem: %d Bytes\n", kinfo.freemem);
+  // printf("  sys_sysinfo num procs: %d procs\n", kinfo.nproc);
+  // printf("Passing back to userspace\n");
   if (copyout(myproc()->pagetable, va,(char*)&kinfo,sizeof(kinfo)) < 0)
   {
     return -1;
