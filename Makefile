@@ -182,14 +182,14 @@ UPROGS=\
 	$U/_ls\
 	$U/_mkdir\
 	$U/_rm\
-	$U/_trace\
 	$U/_sh\
 	$U/_stressfs\
+	$U/_sysinfotest\
+	$U/_trace\
 	$U/_usertests\
 	$U/_grind\
 	$U/_wc\
 	$U/_zombie\
-	$U/_sysinfotest\
 	$U/_sysinfo\
 
 

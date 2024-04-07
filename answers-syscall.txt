@@ -1,0 +1,95 @@
+1.  (gdb) backtrace 
+    #0  syscall () at kernel/syscall.c:164
+    #1  0x0000000080001e18 in usertrap () at kernel/trap.c:67
+    #2  0x0505050505050505 in ?? ()
+    (gdb) 
+
+- Answer: Looking at the backtrace output, usertrap() function called syscall() function.
+
+
+2.  (gdb) p p->trapframe->a7
+    $2 = 7
+    (gdb)  
+
+- The value of a7 is 7. According to the code in user/initcode.S, this a7 register stores the system call number to be executed. 
+The system call number here is 7, which can be found in kernel/syscall.h. This system call is SYS_exec.
+- Answer: The value of p->trapframe->a7 is 7. This value represent the system call number to be executed, which is SYS_exec.
+
+
+3.  (gdb) p /x $sstatus
+    $3 = 0x22
+    (gdb) 
+
+- The SPP bit indicates the privilege level at which a hart was executing before entering supervisor mode. 
+When a trap is taken, SPP is set to 0 if the trap originated from user mode, or 1 otherwise. 
+When an SRET instruction (see Section 3.3.2) is executed to return from the trap handler, 
+the privilege level is set to user mode if the SPP bit is 0, or supervisor mode if the SPP bit is 1; SPP is then set to 0.   
+- According to the binary value of sstatus 0x22=100010, it can be seen that the SPP bit is 0, 
+so the privilege level before executing the system call and trapping in the kernel is user mode.
+- Answer: The previous mode that the CPU was in was user mode.
+
+
+4.  scause 0x000000000000000d
+    sepc=0x00000000800020fc stval=0x0000000000000000
+    panic: kerneltrap
+
+- In this case, sepc=0x00000000800020fc, so I will search for 800020fc in kernel/kernel.asm
+
+    num = * (int *) 0;
+    800020fc:	00002903          	lw	s2,0(zero) # 0 <_entry-0x80000000>
+
+- As you can see, it turns out that num = * (int *) 0; causes the kernel to panic. 
+The corresponding assembly is lw s2,0(zero), which means "load a word(2 byte) from memory address (zero + 0) into register s2"
+- Answer: The kernel is panicing at: num = * (int *) 0; or lw s2,0(zero). The register corresponds to the variable num is register s2.
+
+
+5.  (gdb) b *0x00000000800020fc
+    Breakpoint 1 at 0x800020fc: file kernel/syscall.c, line 169.
+    (gdb) layout asm
+    (gdb) c
+    Continuing.
+    [Switching to Thread 1.2]
+
+    Thread 2 hit Breakpoint 1, syscall () at kernel/syscall.c:169
+    (gdb) c
+    Continuing.
+    (gdb) Ctrl + C  # Keyboard Interrupted
+
+    Thread 2 received signal SIGINT, Interrupt.
+    panic (s=s@entry=0x800083c0 "kerneltrap") at kernel/printf.c:127
+    (gdb) 
+    (gdb) p $scause
+    $1 = 13
+
+- After entering c to continue, a panic will occur. At this time, enter Ctrl + C to end. The scause register contains the value 13.
+To view the scause register, which indicates the cause of the kernel panic, see description of scause in RISC-V privileged instructions.
+- So 13 here represents "Load page fault". It is an error when loading data from memory address (zero + 0) to register a3. 
+So what data is at address 0? The answer can be found in Figure 3.3 of the xv6 textbook "book-riscv-rev3"
+- As you can see, address 0 in the Virtual Address on the left corresponds to Unused in the Physical Address on the right, 
+indicating that this address is not used. Meanwhile, the Kernel starts from the virtual address 0x80000000.
+- Answer: The kernel crashed due to loading an unused memory data at address 0 (Load page fault). 
+Address 0 is not mapped into kernel space (starting at 0x80000000). The exception code 13 in scause confirms the above point.
+
+
+6.  (gdb) b syscall
+    Breakpoint 1 at 0x800020e4: file kernel/syscall.c, line 164.
+    (gdb) c
+    Continuing.
+    [Switching to Thread 1.2]
+
+    Thread 2 hit Breakpoint 1, syscall () at kernel/syscall.c:164
+    164     {
+    (gdb) layout src
+    (gdb) n
+    (gdb) n
+    (gdb) p p->name
+    $1 = "initcode\000\000\000\000\000\000\000"
+    (gdb) p /x *p
+    $2 = {lock = {locked = 0x0, name = 0x800081b8, cpu = 0x0}, state = 0x4, chan = 0x0, killed = 0x0, xstate = 0x0, pid = 0x1, mask = 0x0, parent = 0x0,
+    kstack = 0x3fffffd000, sz = 0x1000, pagetable = 0x87f73000, trapframe = 0x87f74000, context = {ra = 0x80001514, sp = 0x3fffffde80, s0 = 0x3fffffdeb0,
+    s1 = 0x80008f10, s2 = 0x80008ae0, s3 = 0x1, s4 = 0x0, s5 = 0x3, s6 = 0x80019bb0, s7 = 0x8, s8 = 0x80019cd8, s9 = 0x4, s10 = 0x1, s11 = 0x0}, ofile = {
+    0x0 <repeats 16 times>}, cwd = 0x80017020, name = {0x69, 0x6e, 0x69, 0x74, 0x63, 0x6f, 0x64, 0x65, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0}}
+
+- As you can see, this user program is "initcode". Using "p /x *p" to print the proc structure to view other information about this process.
+- As you can see, the pid of this "initcode" is 1.
+- Answer: The name of the binary that was running is "initcode". Its process id is pid=0x1

@@ -132,7 +132,6 @@ static uint64 (*syscalls[])(void) = {
 [SYS_sysinfo] sys_sysinfo,
 };
 
-
 static char *sysname[] = {
 [SYS_fork]    "fork",
 [SYS_exit]    "exit",
@@ -166,6 +165,7 @@ syscall(void)
   struct proc *p = myproc();
 
   num = p->trapframe->a7;
+  // num = * (int *) 0;
   if(num > 0 && num < NELEM(syscalls) && syscalls[num]) {
     // Use num to lookup the system call function for num, call it,
     // and store its return value in p->trapframe->a0
