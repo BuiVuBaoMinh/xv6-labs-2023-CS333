@@ -75,6 +75,31 @@ int
 sys_pgaccess(void)
 {
   // lab pgtbl: your code here.
+
+  // arguments declaration
+  uint64 va_start; // Starting virtual addr
+  int npage; // num pages to check
+  uint64 res_addr; // result buffer address
+  // parse arguments
+  argaddr(0, &va_start);
+  argint(1, &npage);
+  argaddr(2, &res_addr);
+
+  struct proc* p = myproc();
+  pagetable_t pagetable = p->pagetable;
+  uint64 res = 0;
+
+  // PTEs are consecutive, to get accessed ones, we must loops through from va_start
+  for (int i = 0; i < npage; i++) { // loops through npage pages.
+    pte_t* pte = walk(pagetable, va_start + PGSIZE * i, 0); // walk through pages, steps is size of PTE (PGSIZE).
+    if (*pte & PTE_A) { // if Accessed bit is high
+      *pte &= (~PTE_A); // clear Accessed bit
+      res |= (1L << i); // i-th bit is set 1, meaning i-th Page is Accessed.
+    }
+  }
+
+  copyout(pagetable, res_addr, (char*)&res, sizeof(uint64));
+  
   return 0;
 }
 #endif
