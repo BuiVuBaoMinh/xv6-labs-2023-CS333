@@ -106,16 +106,21 @@ sys_trace(void)
 
 
 uint64
-sys_sysinfo(void)
+sys_sysinfo(uint64 va)
 {
   struct sysinfo kinfo; // kernel's info
-  uint64 va; // virtual address returned to user
+  // uint64 va; // virtual address returned to user
   argaddr(0, &va);
   // if (argaddr(0, &va) < 0) {
   //       return -1;
   // }
   kinfo.freemem = get_free_mem();
   kinfo.nproc = get_n_active_proc();
+  //debug
+  printf("sys_sysinfo debug triggered: \n");
+  printf("  sys_sysinfo freemem: %d Bytes\n", kinfo.freemem);
+  printf("  sys_sysinfo num procs: %d procs\n", kinfo.nproc);
+  printf("Passing back to userspace\n");
   if (copyout(myproc()->pagetable, va,(char*)&kinfo,sizeof(kinfo)) < 0)
   {
     return -1;
