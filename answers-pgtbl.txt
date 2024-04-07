@@ -3,3 +3,23 @@ Answer: Any system call that directly or indirectly invokes the copyout function
 Additionally, system calls used purely for information retrieval, such as ugetpid in this section, will also be faster. 
 This is because the operation of trapping into the operating system is no longer necessary, and the corresponding data can be read in user mode instead.
 
+2.Explain the output of vmprint in terms of Fig 3-4 from the text. 
+What does page 0 contain?
+What is in page 2? 
+When running in user mode, could the process read/write the memory mapped by page 1? 
+What does the third to last page contain?
+
+Answer: According to xv6 guide, “A process’s user memory starts at virtual address zero” and “A process’s address space consists of pages that contain the text of the program”, that is the ‘text’ block shown in Figure 3.4.
+
+Also, inspecting the exec() code, we see that at :65 and :68, exec() loads content of the first process’ ELF segment.
+
+We speculate that vaddr is actually address 0 of pagetable for process pid==1. So exec() allocates user memory for pid==1, and the first page (page 0) contains the text and pre-initialized data of it.
+
+The immediately next uvmalloc() and following codes are described in alignment with Figure 3.4. 
+It states that page 1 is for the stack guard, which is used to “detect a user stack overflowing the allocated stack memory” while page 2 is the stack for process pid==1, which contains the command-line arguments arrays of pointers to them.
+
+It is NOT POSSIBLE for the process to read/write the memory mapped by page 1 because this is the stack-overflow guard page, whose PTE_U flag is cleared. If the process attempts accessing this address, a page-fault exception is raised by hardware. 
+
+The 3rd page to final pages contain the heap, trapframe and trampoline.
+
+(A more detailed answer with code captures and Figure ref is provided in our lab report)
